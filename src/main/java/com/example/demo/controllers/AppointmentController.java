@@ -26,6 +26,15 @@ public class AppointmentController {
     @Autowired
     AppointmentRepository appointmentRepository;
 
+    @Autowired
+    DoctorRepository doctorRepository;
+
+    @Autowired
+    PatientRepository patientRepository;
+
+    @Autowired
+    RoomRepository roomRepository;
+
     @GetMapping("/appointments")
     public ResponseEntity<List<Appointment>> getAllAppointments(){
         List<Appointment> appointments = new ArrayList<>();
@@ -56,9 +65,53 @@ public class AppointmentController {
          * Implement this function, which acts as the POST /api/appointment endpoint.
          * Make sure to check out the whole project. Specially the Appointment.java class
          */
-        return new ResponseEntity<>(HttpStatus.I_AM_A_TEAPOT);
+        try {
+            // Validar si la cita se superpone con otras citas para la misma sala
+            if (isOverlappingWithExisting(appointment)) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            // Validar las fechas de inicio y fin de la cita
+            if (appointment.getStartsAt() == null || appointment.getFinishesAt() == null ||
+                    appointment.getStartsAt().isAfter(appointment.getFinishesAt())) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            // Guardar la cita en la base de datos
+            appointmentRepository.save(appointment);
+
+            // Obtener y devolver la lista actualizada de citas
+            List<Appointment> appointments = new ArrayList<>();
+            appointmentRepository.findAll().forEach(appointments::add);
+
+            return new ResponseEntity<>(appointments, HttpStatus.OK);
+        } catch (Exception e) {
+            // Manejar cualquier excepción que pueda ocurrir durante la creación de la cita
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
+    private boolean isOverlappingWithExisting(Appointment newAppointment){
+        List<Appointment> existingAppointments = appointmentRepository.findAll();
+
+        for (Appointment existingAppointment : existingAppointments) {
+            if (existingAppointment.overlaps(newAppointment)) {
+                return true; // Se superpone con otra cita existente
+            }
+        }
+
+        return false;
+    }
+    // Método para verificar si el Doctor y el Patient existen en la base de datos
+    private boolean isDoctorPatientValid(Appointment appointment) {
+        return doctorRepository.findById(appointment.getDoctor().getId()).isEmpty()
+                || patientRepository.findById(appointment.getPatient().getId()).isEmpty();
+    }
+
+    // Método para verificar si la Room existe en la base de datos
+    private boolean isRoomValid(String roomName) {
+        return roomRepository.findByRoomName(roomName).isPresent();
+    }
 
     @DeleteMapping("/appointments/{id}")
     public ResponseEntity<HttpStatus> deleteAppointment(@PathVariable("id") long id){
