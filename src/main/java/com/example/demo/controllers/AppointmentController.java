@@ -77,6 +77,17 @@ public class AppointmentController {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
 
+            // Validar que el Doctor y el Patient existan en la base de datos
+            if (isDoctorPatientValid(appointment) || appointment.getDoctor() == null) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            // Validar que la Room exista en la base de datos
+            if (!isRoomValid(appointment.getRoom().getRoomName())|| appointment.getRoom() == null) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+
             // Guardar la cita en la base de datos
             appointmentRepository.save(appointment);
 
@@ -90,6 +101,8 @@ public class AppointmentController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
 
     private boolean isOverlappingWithExisting(Appointment newAppointment){
         List<Appointment> existingAppointments = appointmentRepository.findAll();
