@@ -51,11 +51,99 @@ class DoctorControllerUnitTest{
 
     @Autowired
     private ObjectMapper objectMapper;
+    @Test
+    void shouldCreateDoctor() throws Exception {
+
+        Doctor doctor = new Doctor ("Perla", "Amalia", 24, "p.amalia@hospital.accwe");
+
+
+        mockMvc.perform(post("/api/doctor").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(doctor)))
+                .andExpect(status().isCreated());
+
+    }
+
 
     @Test
-    void this_is_a_test(){
-        // DELETE ME
-        assertThat(true).isEqualTo(false);
+    void shouldGetNoDoctors() throws Exception{
+        List<Doctor> doctors = new ArrayList<Doctor>();
+        when(doctorRepository.findAll()).thenReturn(doctors);
+        mockMvc.perform(get("/api/doctors"))
+                .andExpect(status().isNoContent());
+
+    }
+
+    @Test
+    void shouldGetTwoDoctors() throws Exception{
+        Doctor doctor = new Doctor ("Perla", "Amalia", 24, "p.amalia@hospital.accwe");
+        Doctor doctor2 = new Doctor ("Miren", "Iniesta", 24, "m.iniesta@hospital.accwe");
+
+        List<Doctor> doctors = new ArrayList<Doctor>();
+        doctors.add(doctor);
+        doctors.add(doctor2);
+
+        when(doctorRepository.findAll()).thenReturn(doctors);
+        mockMvc.perform(get("/api/doctors"))
+                .andExpect(status().isOk());
+
+    }
+
+    @Test
+    void shouldGetDoctorById() throws Exception{
+        Doctor doctor = new Doctor ("Perla", "Amalia", 24, "p.amalia@hospital.accwe");
+        doctor.setId(1);
+
+        Optional<Doctor> doct = Optional.of(doctor);
+
+        assertThat(doct).isPresent();
+        assertThat(doct.get().getId()).isEqualTo(doctor.getId());
+        assertThat(doctor.getId()).isEqualTo(1);
+
+        when(doctorRepository.findById(doctor.getId())).thenReturn(doct);
+        mockMvc.perform(get("/api/doctors/" + doctor.getId()))
+                .andExpect(status().isOk());
+
+    }
+
+    @Test
+    void shouldNotGetAnyDoctorById() throws Exception{
+        long id = 31;
+        mockMvc.perform(get("/api/doctors/" + id))
+                .andExpect(status().isNotFound());
+
+    }
+
+    @Test
+    void shouldDeleteDoctorById() throws Exception{
+        Doctor doctor = new Doctor ("Perla", "Amalia", 24, "p.amalia@hospital.accwe");
+
+        doctor.setId(1);
+
+        Optional<Doctor> doct = Optional.of(doctor);
+
+        assertThat(doct).isPresent();
+        assertThat(doct.get().getId()).isEqualTo(doctor.getId());
+        assertThat(doctor.getId()).isEqualTo(1);
+
+        when(doctorRepository.findById(doctor.getId())).thenReturn(doct);
+        mockMvc.perform(delete("/api/doctors/" + doctor.getId()))
+                .andExpect(status().isOk());
+
+    }
+
+    @Test
+    void shouldNotDeleteDoctor() throws Exception{
+        long id = 31;
+        mockMvc.perform(delete("/api/doctors/" + id))
+                .andExpect(status().isNotFound());
+
+    }
+
+    @Test
+    void shouldDeleteAllDoctors() throws Exception{
+        mockMvc.perform(delete("/api/doctors"))
+                .andExpect(status().isOk());
+
     }
 }
 
