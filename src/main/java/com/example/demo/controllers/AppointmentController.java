@@ -53,21 +53,25 @@ public class AppointmentController {
     }
 
     @PostMapping("/appointment")
-    public ResponseEntity<List<Appointment>> createAppointment(@RequestBody Appointment appointment){
+    public ResponseEntity<?> createAppointment(@RequestBody Appointment appointment){
 
         try {
             if(appointment == null){
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Appointment cannot be null");
             }
 
-            if (isSameAppointment(appointment)){
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-            }
+            // Retrieve all existing appointments
+            List<Appointment> existingAppointments = appointmentRepository.findAll();
 
             // Check if the appointment overlaps with existing appointments
-            if (isOverlappingWithExisting(appointment)) {
-                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+            if (isOverlappingWithExisting(appointment, existingAppointments)) {
+                if (isSameAppointment(appointment, existingAppointments)){
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Appointment already exists");
+                }
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Appointment overlaps with an existing one");
             }
+
+
 
             // Save the appointment to the database
             appointmentRepository.save(appointment);
@@ -78,45 +82,32 @@ public class AppointmentController {
 
             return new ResponseEntity<>(appointments, HttpStatus.OK);
         } catch (Exception e) {
-            // Handle other exceptions, if any
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
 
     }
 
-    private boolean isOverlappingWithExisting(Appointment newAppointment) {
-        // Retrieve all existing appointments
-        List<Appointment> existingAppointments = appointmentRepository.findAll();
-
+    // Check if there is any overlap with existing appointments
+    private boolean isOverlappingWithExisting(Appointment newAppointment, List<Appointment> existingAppointments) {
         // Check for overlap with each existing appointment
-        for (Appointment existingAppointment : existingAppointments) {
-            if (existingAppointment.overlaps(newAppointment)) {
-                return true; // Overlaps with another existing appointment
-            }
-        }
-
-        return false;
+        return existingAppointments.stream().anyMatch(existingAppointment -> existingAppointment.overlaps(newAppointment));
     }
 
-    private boolean isSameAppointment(Appointment appointment) {
-
-        // Retrieve all existing appointments
-        List<Appointment> existingAppointments = appointmentRepository.findAll();
-
+    // Check if it is the same appointment as any existing appointment
+    private boolean isSameAppointment(Appointment appointment, List<Appointment> existingAppointments) {
         // Check for overlap with each existing appointment
         for (Appointment existingAppointment : existingAppointments) {
             if ((appointment.getPatient().equals(existingAppointment.getPatient()))
                     && (appointment.getDoctor().equals(existingAppointment.getDoctor()))
-                    && (appointment.getRoom().equals(existingAppointment.getRoom())
+                    && (appointment.getRoom().equals(existingAppointment.getRoom()))
                     && (appointment.getStartsAt().isEqual(existingAppointment.getStartsAt()))
-                    && (appointment.getFinishesAt().isEqual(existingAppointment.getFinishesAt()))) ) {
+                    && (appointment.getFinishesAt().isEqual(existingAppointment.getFinishesAt())))
+            {
                 return true;
             }
         }
-
         return false;
     }
-
 
     @DeleteMapping("/appointments/{id}")
     public ResponseEntity<HttpStatus> deleteAppointment(@PathVariable("id") long id){
