@@ -10,6 +10,7 @@ import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,7 @@ public class AppointmentController {
 
     @Autowired
     AppointmentRepository appointmentRepository;
+
 
     @GetMapping("/appointments")
     public ResponseEntity<List<Appointment>> getAllAppointments(){
@@ -51,14 +53,64 @@ public class AppointmentController {
     }
 
     @PostMapping("/appointment")
-    public ResponseEntity<List<Appointment>> createAppointment(@RequestBody Appointment appointment){
-        /** TODO 
-         * Implement this function, which acts as the POST /api/appointment endpoint.
-         * Make sure to check out the whole project. Specially the Appointment.java class
-         */
-        return new ResponseEntity<>(HttpStatus.I_AM_A_TEAPOT);
+    public ResponseEntity<?> createAppointment(@RequestBody Appointment appointment){
+        // Retrieve all existing appointments
+        List<Appointment> existingAppointments = appointmentRepository.findAll();
+        List<Appointment> appointments = new ArrayList<>();
+
+        // Check if any required field in the appointment is null
+        if(appointment == null || appointment.getPatient() == null || appointment.getDoctor() == null || appointment.getRoom() == null ||
+             appointment.getStartsAt() == null || appointment.getFinishesAt() == null){
+            return new ResponseEntity<>(appointments, HttpStatus.BAD_REQUEST);
+        }
+
+        // Check if the appointment end time is before or equal to the start time
+        if (appointment.getFinishesAt().isBefore(appointment.getStartsAt()) || appointment.getFinishesAt().isEqual(appointment.getStartsAt())) {
+            return new ResponseEntity<>(appointments, HttpStatus.BAD_REQUEST);
+        }
+
+        // Check if the appointment overlaps with existing appointments
+        if (isOverlappingWithExisting(appointment, existingAppointments)) {
+           if (isSameAppointment(appointment, existingAppointments)){
+               return new ResponseEntity<>(appointments, HttpStatus.BAD_REQUEST);
+           }
+          return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Appointment overlaps with an existing one");
+        }
+
+
+        try {
+            // Save the appointment to the database
+            appointmentRepository.save(appointment);
+            // Get and return the updated list of appointments
+            appointmentRepository.findAll().forEach(appointments::add);
+            return new ResponseEntity<>(appointments, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+
     }
 
+    // Check if there is any overlap with existing appointments
+    private boolean isOverlappingWithExisting(Appointment newAppointment, List<Appointment> existingAppointments) {
+        // Check for overlap with each existing appointment
+        return existingAppointments.stream().anyMatch(existingAppointment -> existingAppointment.overlaps(newAppointment));
+    }
+
+    // Check if it is the same appointment as any existing appointment
+    private boolean isSameAppointment(Appointment appointment, List<Appointment> existingAppointments) {
+        // Check for overlap with each existing appointment
+        for (Appointment existingAppointment : existingAppointments) {
+            if ((appointment.getPatient().equals(existingAppointment.getPatient()))
+                    && (appointment.getDoctor().equals(existingAppointment.getDoctor()))
+                    && (appointment.getRoom().equals(existingAppointment.getRoom()))
+                    && (appointment.getStartsAt().isEqual(existingAppointment.getStartsAt()))
+                    && (appointment.getFinishesAt().isEqual(existingAppointment.getFinishesAt())))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @DeleteMapping("/appointments/{id}")
     public ResponseEntity<HttpStatus> deleteAppointment(@PathVariable("id") long id){
