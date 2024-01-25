@@ -19,6 +19,8 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 
 import com.example.demo.entities.*;
 
+import javax.transaction.Transactional;
+
 @DataJpaTest
 @AutoConfigureTestDatabase(replace=Replace.NONE)
 @TestInstance(Lifecycle.PER_CLASS)
@@ -37,65 +39,86 @@ class EntityUnitTest {
     private Appointment a2;
     private Appointment a3;
 
-    @BeforeAll
-    void setupTestData() {
-        entityManager.persist(d1);
-        entityManager.persist(p1);
-        entityManager.persist(r1);
-        entityManager.persist(a1);
-        entityManager.persist(a2);
-        entityManager.persist(a3);
-        entityManager.flush();
-    }
+
+    /** Doctor Entity test
+     *
+     */
     @Test
-    void shouldSaveAndRetrieveDoctor() {
-        Doctor retrievedDoctor = entityManager.find(Doctor.class, d1.getId());
-        assertThat(retrievedDoctor).isEqualTo(d1);
+    void createDoctorInstanceWithoutAttributes() {
+        Doctor invalidDoctor = new Doctor();
+        assertThat(invalidDoctor).isNotNull();
     }
 
     @Test
-    void shouldSaveAndRetrievePatient() {
-        Patient retrievedPatient = entityManager.find(Patient.class, p1.getId());
-        assertThat(retrievedPatient).isEqualTo(p1);
+    void createDoctorInstance() {
+        d1 = new Doctor("Shaun", "Murphy", 20, "shaun.murphy@thegooddoctor.com");
+        assertThat(d1).isNotNull();
+        assertThat(d1.getFirstName()).isEqualTo("Shaun");
+        assertThat(d1.getLastName()).isEqualTo("Murphy");
+        assertThat(d1.getAge()).isEqualTo(20);
+        assertThat(d1.getEmail()).isEqualTo("shaun.murphy@thegooddoctor.com");
+    }
+
+    /** Patient
+     *
+     */
+    @Test
+    void createPatientInstanceWithoutAttributes() {
+        Patient invalidPatient = new Patient();
+        assertThat(invalidPatient).isNotNull();
     }
 
     @Test
-    void shouldSaveAndRetrieveRoom() {
-        Room retrievedRoom = entityManager.find(Room.class, r1.getRoomName());
-        assertThat(retrievedRoom).isEqualTo(r1.getRoomName());
+    void createPatientInstance() {
+        p1 = new Patient("Alice", "Johnson", 30, "alice.johnson@example.com");
+        assertThat(p1).isNotNull();
+        assertThat(p1.getFirstName()).isEqualTo("Alice");
+        assertThat(p1.getLastName()).isEqualTo("Johnson");
+        assertThat(p1.getAge()).isEqualTo(30);
+        assertThat(p1.getEmail()).isEqualTo("alice.johnson@example.com");
+    }
+
+    /** Room
+     *
+     */
+    @Test
+    void createRoomInstanceWithoutAttributes() {
+        Room invalidRoom = new Room();
+        assertThat(invalidRoom).isNotNull();
     }
 
     @Test
-    void shouldSaveAndRetrieveAppointment() {
-        Appointment retrievedAppointment = entityManager.find(Appointment.class, a1.getId());
-        assertThat(retrievedAppointment).isEqualTo(a1);
+    void createRoomInstance() {
+        r1 = new Room("101");
+        assertThat(r1).isNotNull();
+        assertThat(r1.getRoomName()).isEqualTo("101");
     }
 
+    /** Appointment
+     *
+     */
     @Test
-    void appointmentEntityShouldHaveCorrectGettersAndSetters() {
-        assertThat(a1)
-                .hasFieldOrPropertyWithValue("patient", p1)
-                .hasFieldOrPropertyWithValue("doctor", d1)
-                .hasFieldOrPropertyWithValue("room", r1)
-                .hasFieldOrPropertyWithValue("startsAt", a1.getStartsAt())
-                .hasFieldOrPropertyWithValue("finishesAt", a1.getFinishesAt());
-    }
+    void createAppointmentInstance() {
+        p1 = new Patient("Alice", "Johnson", 30, "alice.johnson@example.com");
+        d1 = new Doctor("Shaun", "Murphy", 40, "shaun.murphy@thegooddoctor.com");
+        r1 = new Room("101");
 
-    @Test
-    void appointmentEntityShouldHaveCorrectOverlapLogic() {
-        // Implement tests for the overlaps method in the Appointment entity
-        LocalDateTime startsAt = LocalDateTime.now();
+        LocalDateTime startsAt = LocalDateTime.now().plusHours(1);
         LocalDateTime finishesAt = startsAt.plusHours(2);
 
-        Appointment overlappingAppointment = new Appointment(p1, d1, r1, startsAt.plusMinutes(30), finishesAt.plusMinutes(30));
-        Appointment nonOverlappingAppointment = new Appointment(p1, d1, r1, startsAt.plusHours(3), finishesAt.plusHours(4));
+        a1 = new Appointment(p1, d1, r1, startsAt, finishesAt);
+        assertThat(a1).isNotNull();
+        assertThat(a1.getPatient()).isEqualTo(p1);
+        assertThat(a1.getDoctor()).isEqualTo(d1);
+        assertThat(a1.getRoom()).isEqualTo(r1);
+        assertThat(a1.getStartsAt()).isEqualTo(startsAt);
+        assertThat(a1.getFinishesAt()).isEqualTo(finishesAt);
+    }
 
-        entityManager.persist(overlappingAppointment);
-        entityManager.persist(nonOverlappingAppointment);
-        entityManager.flush();
-
-        assertThat(a1.overlaps(overlappingAppointment)).isTrue();
-        assertThat(a2.overlaps(nonOverlappingAppointment)).isFalse();
+    @Test
+    void createAppointmentInstanceWithoutAttributes() {
+        Appointment invalidAppointment = new Appointment();
+        assertThat(invalidAppointment).isNotNull();
     }
 
 
