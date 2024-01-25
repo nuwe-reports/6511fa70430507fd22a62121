@@ -54,32 +54,35 @@ public class AppointmentController {
 
     @PostMapping("/appointment")
     public ResponseEntity<?> createAppointment(@RequestBody Appointment appointment){
+        // Retrieve all existing appointments
+        List<Appointment> existingAppointments = appointmentRepository.findAll();
+        List<Appointment> appointments = new ArrayList<>();
+
+        // Check if any required field in the appointment is null
+        if(appointment == null || appointment.getPatient() == null || appointment.getDoctor() == null || appointment.getRoom() == null ||
+             appointment.getStartsAt() == null || appointment.getFinishesAt() == null){
+            return new ResponseEntity<>(appointments, HttpStatus.BAD_REQUEST);
+        }
+
+        // Check if the appointment end time is before or equal to the start time
+        if (appointment.getFinishesAt().isBefore(appointment.getStartsAt()) || appointment.getFinishesAt().isEqual(appointment.getStartsAt())) {
+            return new ResponseEntity<>(appointments, HttpStatus.BAD_REQUEST);
+        }
+
+        // Check if the appointment overlaps with existing appointments
+        if (isOverlappingWithExisting(appointment, existingAppointments)) {
+           if (isSameAppointment(appointment, existingAppointments)){
+               return new ResponseEntity<>(appointments, HttpStatus.BAD_REQUEST);
+           }
+          return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Appointment overlaps with an existing one");
+        }
+
 
         try {
-            if(appointment == null){
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Appointment cannot be null");
-            }
-
-            // Retrieve all existing appointments
-            List<Appointment> existingAppointments = appointmentRepository.findAll();
-
-            // Check if the appointment overlaps with existing appointments
-            if (isOverlappingWithExisting(appointment, existingAppointments)) {
-                if (isSameAppointment(appointment, existingAppointments)){
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Appointment already exists");
-                }
-                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Appointment overlaps with an existing one");
-            }
-
-
-
             // Save the appointment to the database
             appointmentRepository.save(appointment);
-
             // Get and return the updated list of appointments
-            List<Appointment> appointments = new ArrayList<>();
             appointmentRepository.findAll().forEach(appointments::add);
-
             return new ResponseEntity<>(appointments, HttpStatus.OK);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
