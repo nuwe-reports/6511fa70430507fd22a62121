@@ -1,6 +1,16 @@
+# Dockerfile for MySQL
+
+# Use an official MySQL image
 FROM mysql:latest
 
-ENV MYSQL_DATABASE=database \
-    MYSQL_ROOT_PASSWORD=mypassword \
-    MYSQL_USER=admin \
-    MYSQL_PASSWORD=1234
+# Environment variables to configure the database
+ENV MYSQL_DATABASE=mydatabase
+ENV MYSQL_USER=myuser
+ENV MYSQL_PASSWORD=mypassword
+ENV MYSQL_ROOT_PASSWORD=myrootpassword
+
+# Copy the database initialization script
+COPY init.sql /docker-entrypoint-initdb.d/
+
+# Default port for MySQL
+EXPOSE 3306

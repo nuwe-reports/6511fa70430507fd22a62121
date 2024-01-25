@@ -1,12 +1,22 @@
-# Build and test stage
+# Multistage Dockerfile to build and run a Spring Boot microservice
+
+# Stage 1: Build the application with Maven
 FROM maven:3.8.4-openjdk-8-slim AS build
-WORKDIR /usr/src/app
-COPY . .
+WORKDIR /src/app
+COPY pom.xml .
+COPY src ./src
 RUN mvn clean test package
 
-# Final packaging stage
-FROM maven:3.8.4-openjdk-8-slim
-WORKDIR /usr/app
+# Stage 2: Run tests
+RUN mvn test
+
+# Stage 3: Build the final application image
+FROM openjdk:latest
+WORKDIR /app
 COPY --from=build /usr/src/app/target/accenture-techhub-0.0.1-SNAPSHOT.war .
+
+# Default port for Spring Boot
 EXPOSE 8080
+
+# Command to run the application
 CMD ["java", "-jar", "accenture-techhub-0.0.1-SNAPSHOT.war"]
