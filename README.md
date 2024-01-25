@@ -12,6 +12,8 @@ This API is designed to manage appointments for a hospital. It provides endpoint
 
 ## UML Class Diagram
 
+![umlx3](https://github.com/nuwe-reports/6511fa70430507fd22a62121/assets/99567012/ebc71b12-a3fb-4ad2-a9b4-8b6fe2267231)
+
 
 ## Features
 
