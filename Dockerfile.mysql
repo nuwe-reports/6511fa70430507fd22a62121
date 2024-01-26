@@ -1,10 +1,8 @@
-# Image to run MySQL
 FROM mysql:latest
 
+ENV MYSQL_DATABASE=accwe-hospital
 ENV MYSQL_ROOT_PASSWORD=root
-ENV MYSQL_DATABASE=mydatabase
-ENV MYSQL_USER=myuser
-ENV MYSQL_PASSWORD=mypassword
+ENV MYSQL_ALLOW_EMPTY_PASSWORD=no
 
-COPY db/init.sql /docker-entrypoint-initdb.d/
+EXPOSE 3306
 

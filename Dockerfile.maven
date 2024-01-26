@@ -1,12 +1,15 @@
-# Build and test stage
-FROM maven:3.9-eclipse-temurin-11
+
+FROM maven:latest AS build
 WORKDIR /app
-COPY . .
+COPY pom.xml .
+COPY src src
 RUN mvn clean package
 
-# Final packaging stage
-FROM eclipse-temurin:11
-WORKDIR /app
-COPY --from=build /app/target/accenture-techhub-0.0.1-SNAPSHOT.war .
-EXPOSE 8080
-CMD ["java", "-jar", "accenture-techhub-0.0.1-SNAPSHOT.war"]
+
+FROM build AS test
+RUN mvn test
+
+FROM tomcat:9.0-jre11-slim
+COPY target/accenture-techhub-0.0.1-SNAPSHOT.war /usr/local/tomcat/webapps/
+EXPOSE 5501
+CMD ["catalina.sh", "run"]
