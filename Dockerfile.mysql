@@ -1,5 +1,5 @@
 # Image to run MySQL
-FROM mysql:8.0
+FROM mysql:latest
 
 ENV MYSQL_ROOT_PASSWORD=root
 ENV MYSQL_DATABASE=mydatabase
